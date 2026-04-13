@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <a href="../index.html">Home</a> | 
+    <a href="resume.html">Resume</a> |
+    <a href="aboutme.html">About Me</a> |
+    <a href="#">Snake Game</a>
+    <title>Snake Game</title>
+    
+    <style>
+        body {
+            /* We are avoiding basic aesthetics (like blue on red) */
+            background-color: #f2f4f8; /* Light, neutral gray */
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c3e50; /* A dark, professional shade */
+        }
+
+        /* Container for the game area to center it and provide space */
+        #game-container {
+            position: relative;
+            margin: 20px auto;
+            border-radius: 10px; /* Modern, smooth edges */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Soft professional shadow */
+            background-color: white;
+            padding: 10px;
+            width: fit-content;
+        }
+
+        /* 2. HTML CANVAS: The grid where the magic happens */
+        #gameCanvas {
+            background-color: #34495e; /* Dark "slate" board */
+            border: 2px solid #2c3e50;
+            border-radius: 5px;
+            display: block;
+        }
+
+        #scoreBoard {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #e74c3c; /* Red, but used for text emphasis, not readability error */
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>The Classic Snake Game</h1>
+    <p>Use the arrow keys on your keyboard to play.</p>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div id="scoreBoard">Score: <span id="score">0</span></div>
+    </div>
+
+    <script>
+        // -- Configuration: Adjust these for 'Creative Contribution' --
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const gridSize = 20; // Size of each square in pixels
+        const tileCount = canvas.width / gridSize; // Number of tiles (20x20)
+        
+        // Customization: Change the speed (higher number = faster game)
+        let gameSpeed = 100; // Milliseconds per update loop
+
+        // -- Colors --
+        // Change these hex codes to adjust the look
+        const headColor = '#27ae60'; // Dark Green (Head)
+        const bodyColor = '#2ecc71'; // Light Green (Body)
+        const foodColor = '#e74c3c'; // Red (Food)
+
+        // -- Game State Variables --
+        let score = 0;
+        let dx = 0; // Horizontal velocity (direction)
+        let dy = 0; // Vertical velocity (direction)
+        
+        // The snake is an array of coordinate objects
+        let snake = [
+            { x: 10, y: 10 } // Starting position (center)
+        ];
+
+        // The food item
+        let food = { x: 15, y: 15 }; // Starting food position
+
+        // Function to set up the new food location
+        function createFood() {
+            // Generate random whole numbers between 0 and 19 (the tileCount - 1)
+            food.x = Math.floor(Math.random() * tileCount);
+            food.y = Math.floor(Math.random() * tileCount);
+        }
+
+        // -- The Core Game Loop --
+        function gameLoop() {
+            update(); // 1. Calculate next move
+            draw();   // 2. Render new positions
+            setTimeout(gameLoop, gameSpeed); // 3. Recursively call itself after the speed delay
+        }
+
+        // Function to capture keyboard input
+        function handleKeydown(event) {
+            const key = event.key;
+            // Prevent going back on yourself (e.g., if moving right, can't instantly move left)
+            if (key === "ArrowUp" && dy !== 1) { dx = 0; dy = -1; }
+            if (key === "ArrowDown" && dy !== -1) { dx = 0; dy = 1; }
+            if (key === "ArrowLeft" && dx !== 1) { dx = -1; dy = 0; }
+            if (key === "ArrowRight" && dx !== -1) { dx = 1; dy = 0; }
+        }
+
+        // Update the state (logic) of the game
+        function update() {
+            // Create the new position based on current heading (velocity)
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            // -- Check for Game Over Conditions --
+            // 1. Hit the walls
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+                gameOver();
+                return;
+            }
+            
+            // 2. Hit self (check all body parts except head)
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            // -- Move the snake --
+            // We do this by adding the new 'head' object to the front of the array.
+            snake.unshift(head);
+
+            // -- Check for Food Consumption --
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                document.getElementById("score").innerText = score;
+                createFood(); // Reposition food
+                // If food is eaten, we don't 'pop' the tail, making the snake longer.
+            } else {
+                // If no food, 'pop' the last segment off to simulate moving
+                snake.pop();
+            }
+        }
+
+        // Draw the current state of the game on the canvas (visuals)
+        function draw() {
+            // Clear the entire canvas board first
+            ctx.fillStyle = getComputedStyle(canvas).backgroundColor; // Uses CSS value
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the snake
+            for (let i = 0; i < snake.length; i++) {
+                // Style the head differently than the body
+                ctx.fillStyle = (i === 0) ? headColor : bodyColor;
+                
+                // Draw a rectangle: ctx.fillRect(startX, startY, width, height)
+                ctx.fillRect(snake[i].x * gridSize, snake[i].y * gridSize, gridSize - 2, gridSize - 2);
+            }
+
+            // Draw the food
+            ctx.fillStyle = foodColor;
+            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 2, gridSize - 2);
+        }
+
+        function gameOver() {
+            // In a simple single-page app, we use an alert.
+            alert("Game Over! Score: " + score);
+            resetGame();
+        }
+
+        function resetGame() {
+            score = 0;
+            document.getElementById("score").innerText = score;
+            snake = [{ x: 10, y: 10 }]; // Reset position
+            createFood();
+            dx = 0; // Stop movement
+            dy = 0;
+        }
+
+        // -- Event Listeners and Initialization --
+        document.addEventListener("keydown", handleKeydown); // Detect keystrokes
+        createFood(); // Place initial food
+        gameLoop(); // Start the loop
+
+    </script>
+</body>
+</html>
